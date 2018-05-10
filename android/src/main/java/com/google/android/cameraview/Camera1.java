@@ -721,7 +721,7 @@ class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
 
         mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
         if (recordAudio) {
-            mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
+            mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
         }
 
         mMediaRecorder.setOutputFile(path);
