@@ -569,7 +569,7 @@ class Camera2 extends CameraViewImpl implements MediaRecorder.OnInfoListener, Me
     }
 
     @Override
-    void setDisplayOrientation(int displayOrientation) {
+    void setDisplayOrientation(int displayOrientation,int rotation) {
         mDisplayOrientation = displayOrientation;
         mPreview.setDisplayOrientation(mDisplayOrientation);
     }

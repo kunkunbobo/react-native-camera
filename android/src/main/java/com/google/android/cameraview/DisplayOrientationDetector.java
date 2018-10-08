@@ -17,6 +17,7 @@
 package com.google.android.cameraview;
 
 import android.content.Context;
+import android.util.Log;
 import android.util.SparseIntArray;
 import android.view.Display;
 import android.view.OrientationEventListener;
@@ -56,10 +57,25 @@ abstract class DisplayOrientationDetector {
                         mDisplay == null) {
                     return;
                 }
-                final int rotation = mDisplay.getRotation();
+
+               // int rotation = mDisplay.getRotation();
+                int rotation = 0;
+                if(orientation > 45 && orientation<= 135){
+                    rotation = 180;
+                }
+                else if(orientation > 135 && orientation<= 225){
+                    rotation = 270;
+                }
+                else if(orientation>=225 && orientation<315){
+                    rotation = 0;
+                }
+                else{
+                    rotation = 90;
+                }
                 if (mLastKnownRotation != rotation) {
                     mLastKnownRotation = rotation;
-                    dispatchOnDisplayOrientationChanged(DISPLAY_ORIENTATIONS.get(rotation));
+                   // dispatchOnDisplayOrientationChanged(DISPLAY_ORIENTATIONS.get(rotation));
+                    dispatchOnDisplayOrientationChanged(rotation);
                 }
             }
         };

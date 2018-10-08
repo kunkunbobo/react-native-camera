@@ -23,6 +23,8 @@ import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.os.Build;
 import android.support.v4.util.SparseArrayCompat;
+import android.util.Log;
+import android.view.Display;
 import android.view.SurfaceHolder;
 
 import java.io.File;
@@ -91,6 +93,8 @@ class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
     private int mFlash;
 
     private int mDisplayOrientation;
+    
+    private  int mDisplayRoate;
 
     private float mZoom;
 
@@ -392,20 +396,23 @@ class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
     }
 
     @Override
-    void setDisplayOrientation(int displayOrientation) {
-        if (mDisplayOrientation == displayOrientation) {
+    void setDisplayOrientation(int displayOrientation, int rotation) {
+        if (mDisplayOrientation == displayOrientation && mDisplayRoate == rotation) {
             return;
         }
         mDisplayOrientation = displayOrientation;
+        mDisplayRoate = rotation;
+        
         if (isCameraOpened()) {
-            mCameraParameters.setRotation(calcCameraRotation(displayOrientation));
+           // mCameraParameters.setRotation(calcCameraRotation(displayOrientation));
+            mCameraParameters.setRotation(rotation);
             mCamera.setParameters(mCameraParameters);
             final boolean needsToStopPreview = mShowingPreview && Build.VERSION.SDK_INT < 14;
             if (needsToStopPreview) {
                 mCamera.stopPreview();
             }
             mCamera.setDisplayOrientation(calcDisplayOrientation(displayOrientation));
-            if (needsToStopPreview) {
+           if (needsToStopPreview) {
                 startCameraPreview();
             }
         }
@@ -476,7 +483,9 @@ class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
                 mAspectRatio = Constants.DEFAULT_ASPECT_RATIO;
             }
             adjustCameraParameters();
-            mCamera.setDisplayOrientation(calcDisplayOrientation(mDisplayOrientation));
+           mCamera.setDisplayOrientation(calcDisplayOrientation(mDisplayOrientation));
+          //  mCamera.setDisplayOrientation(0);
+
             mCallback.onCameraOpened();
             return true;
         } catch (RuntimeException e) {
@@ -511,7 +520,8 @@ class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
         }
         mCameraParameters.setPreviewSize(size.getWidth(), size.getHeight());
         mCameraParameters.setPictureSize(pictureSize.getWidth(), pictureSize.getHeight());
-        mCameraParameters.setRotation(calcCameraRotation(mDisplayOrientation));
+       // mCameraParameters.setRotation(calcCameraRotation(mDisplayOrientation));
+        mCameraParameters.setRotation(mDisplayRoate);
         setAutoFocusInternal(mAutoFocus);
         setFlashInternal(mFlash);
         setAspectRatio(mAspectRatio);
