@@ -543,7 +543,7 @@ class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
         int desiredHeight;
         final int surfaceWidth = mPreview.getWidth();
         final int surfaceHeight = mPreview.getHeight();
-        if (isLandscape(mDisplayOrientation)) {
+        if (isLandscape(mDisplayRoate)) {
             desiredWidth = surfaceHeight;
             desiredHeight = surfaceWidth;
         } else {
@@ -743,8 +743,8 @@ class Camera1 extends CameraViewImpl implements MediaRecorder.OnInfoListener,
             setCamcorderProfile(CamcorderProfile.get(mCameraId, CamcorderProfile.QUALITY_HIGH), recordAudio);
         }
 
-        mMediaRecorder.setOrientationHint(calcCameraRotation(mDisplayOrientation));
-
+       // mMediaRecorder.setOrientationHint(calcCameraRotation(mDisplayOrientation));
+        mMediaRecorder.setOrientationHint(mDisplayRoate);
         if (maxDuration != -1) {
             mMediaRecorder.setMaxDuration(maxDuration);
         }
