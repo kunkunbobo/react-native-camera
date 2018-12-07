@@ -12,6 +12,7 @@ import org.reactnative.barcodedetector.BarcodeFormatUtils;
 import org.reactnative.camera.tasks.ResolveTakenPictureAsyncTask;
 import org.reactnative.camera.utils.ScopedContext;
 import org.reactnative.facedetector.RNFaceDetector;
+import com.google.android.cameraview.Size;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
@@ -20,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 
 public class CameraModule extends ReactContextBaseJavaModule {
   private static final String TAG = "CameraModule";
@@ -30,6 +32,10 @@ public class CameraModule extends ReactContextBaseJavaModule {
   static final int VIDEO_720P = 2;
   static final int VIDEO_480P = 3;
   static final int VIDEO_4x3 = 4;
+
+  static final int GOOGLE_VISION_BARCODE_MODE_NORMAL = 0;
+  static final int GOOGLE_VISION_BARCODE_MODE_ALTERNATE = 1;
+  static final int GOOGLE_VISION_BARCODE_MODE_INVERTED = 2;
 
   public static final Map<String, Object> VALID_BARCODE_TYPES =
       Collections.unmodifiableMap(new HashMap<String, Object>() {
@@ -116,6 +122,7 @@ public class CameraModule extends ReactContextBaseJavaModule {
         put("GoogleVisionBarcodeDetection", Collections.unmodifiableMap(new HashMap<String, Object>() {
           {
             put("BarcodeType", BarcodeFormatUtils.REVERSE_FORMATS);
+            put("BarcodeMode", getGoogleVisionBarcodeModeConstants());
           }
         }));
       }
@@ -174,11 +181,63 @@ public class CameraModule extends ReactContextBaseJavaModule {
         });
       }
 
+      private Map<String, Object> getGoogleVisionBarcodeModeConstants() {
+        return Collections.unmodifiableMap(new HashMap<String, Object>() {
+          {
+            put("NORMAL", GOOGLE_VISION_BARCODE_MODE_NORMAL);
+            put("ALTERNATE", GOOGLE_VISION_BARCODE_MODE_ALTERNATE);
+            put("INVERTED", GOOGLE_VISION_BARCODE_MODE_INVERTED);
+          }
+        });
+      }
+
       private Map<String, Object> getBarCodeConstants() {
         return VALID_BARCODE_TYPES;
       }
     });
   }
+    
+    @ReactMethod
+    public void pausePreview(final int viewTag) {
+        final ReactApplicationContext context = getReactApplicationContext();
+        UIManagerModule uiManager = context.getNativeModule(UIManagerModule.class);
+        uiManager.addUIBlock(new UIBlock() {
+            @Override
+            public void execute(NativeViewHierarchyManager nativeViewHierarchyManager) {
+                final RNCameraView cameraView;
+                
+                try {
+                    cameraView = (RNCameraView) nativeViewHierarchyManager.resolveView(viewTag);
+                    if (cameraView.isCameraOpened()) {
+                        cameraView.pausePreview();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+    
+    @ReactMethod
+    public void resumePreview(final int viewTag) {
+        final ReactApplicationContext context = getReactApplicationContext();
+        UIManagerModule uiManager = context.getNativeModule(UIManagerModule.class);
+        uiManager.addUIBlock(new UIBlock() {
+            @Override
+            public void execute(NativeViewHierarchyManager nativeViewHierarchyManager) {
+                final RNCameraView cameraView;
+                
+                try {
+                    cameraView = (RNCameraView) nativeViewHierarchyManager.resolveView(viewTag);
+                    if (cameraView.isCameraOpened()) {
+                        cameraView.resumePreview();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
 
   @ReactMethod
   public void takePicture(final ReadableMap options, final int viewTag, final Promise promise) {
@@ -190,18 +249,11 @@ public class CameraModule extends ReactContextBaseJavaModule {
       public void execute(NativeViewHierarchyManager nativeViewHierarchyManager) {
           RNCameraView cameraView = (RNCameraView) nativeViewHierarchyManager.resolveView(viewTag);
           try {
-              if (!Build.FINGERPRINT.contains("generic")) {
-                if (cameraView.isCameraOpened()) {
-                  cameraView.takePicture(options, promise, cacheDirectory);
-                } else {
-                  promise.reject("E_CAMERA_UNAVAILABLE", "Camera is not running");
-                }
-              } else {
-                  Bitmap image = RNCameraViewHelper.generateSimulatorPhoto(cameraView.getWidth(), cameraView.getHeight());
-                  ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                  image.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-                  new ResolveTakenPictureAsyncTask(stream.toByteArray(), promise, options, cacheDirectory).execute();
-              }
+            if (cameraView.isCameraOpened()) {
+              cameraView.takePicture(options, promise, cacheDirectory);
+            } else {
+              promise.reject("E_CAMERA_UNAVAILABLE", "Camera is not running");
+            }
         } catch (Exception e) {
           promise.reject("E_CAMERA_BAD_VIEWTAG", "takePictureAsync: Expected a Camera component");
         }
@@ -228,7 +280,7 @@ public class CameraModule extends ReactContextBaseJavaModule {
                       promise.reject("E_CAMERA_UNAVAILABLE", "Camera is not running");
                   }
               } catch (Exception e) {
-                  promise.reject("E_CAMERA_BAD_VIEWTAG", "recordAsync: Expected a Camera component");
+                  promise.reject("E_CAPTURE_FAILED", e.getMessage());
               }
           }
       });
@@ -281,4 +333,31 @@ public class CameraModule extends ReactContextBaseJavaModule {
           }
       });
   }
+    @ReactMethod
+    public void getAvailablePictureSizes(final String ratio, final int viewTag, final Promise promise) {
+        final ReactApplicationContext context = getReactApplicationContext();
+        UIManagerModule uiManager = context.getNativeModule(UIManagerModule.class);
+        uiManager.addUIBlock(new UIBlock() {
+            @Override
+            public void execute(NativeViewHierarchyManager nativeViewHierarchyManager) {
+                final RNCameraView cameraView;
+                
+                try {
+                    cameraView = (RNCameraView) nativeViewHierarchyManager.resolveView(viewTag);
+                    WritableArray result = Arguments.createArray();
+                    if (cameraView.isCameraOpened()) {
+                        SortedSet<Size> sizes = cameraView.getAvailablePictureSizes(AspectRatio.parse(ratio));
+                        for (Size size : sizes) {
+                            result.pushString(size.toString());
+                        }
+                        promise.resolve(result);
+                    } else {
+                        promise.reject("E_CAMERA_UNAVAILABLE", "Camera is not running");
+                    }
+                } catch (Exception e) {
+                    promise.reject("E_CAMERA_BAD_VIEWTAG", "getAvailablePictureSizesAsync: Expected a Camera component");
+                }
+            }
+        });
+    }
 }
