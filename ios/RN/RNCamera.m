@@ -484,7 +484,7 @@ static NSDictionary *defaultFaceDetectorOptions = nil;
 }
 - (void)record:(NSDictionary *)options resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {
-    int orientation;
+    NSInteger orientation;
     if ([options[@"orientation"] integerValue]) {
         orientation = [options[@"orientation"] integerValue];
     } else {
@@ -514,15 +514,70 @@ static NSDictionary *defaultFaceDetectorOptions = nil;
     if (options[@"maxFileSize"]) {
         self.movieFileOutput.maxRecordedFileSize = [options[@"maxFileSize"] integerValue];
     }
+//
+//    if (options[@"quality"]) {
+//        AVCaptureSessionPreset newQuality = [RNCameraUtils captureSessionPresetForVideoResolution:(RNCameraVideoResolution)[options[@"quality"] integerValue]];
+//        if (self.session.sessionPreset != newQuality) {
+//            [self updateSessionPreset:newQuality];
+//        }
+//    }
 
-    if (options[@"quality"]) {
-        AVCaptureSessionPreset newQuality = [RNCameraUtils captureSessionPresetForVideoResolution:(RNCameraVideoResolution)[options[@"quality"] integerValue]];
-        if (self.session.sessionPreset != newQuality) {
-            [self updateSessionPreset:newQuality];
+   // [self updateSessionAudioIsMuted:[options[@"mute"] boolValue] ];
+    
+    
+    
+    
+    dispatch_async(self.sessionQueue, ^{
+        [self.session beginConfiguration];
+        
+        if (options[@"quality"]) {
+            AVCaptureSessionPreset preset = [RNCameraUtils captureSessionPresetForVideoResolution:(RNCameraVideoResolution)[options[@"quality"] integerValue]];
+            if (self.session.sessionPreset != preset) {
+               
+                if ([preset integerValue] >=0 ) {
+                    if (self.isDetectingFaces && [preset isEqual:AVCaptureSessionPresetPhoto]) {
+                        RCTLog(@"AVCaptureSessionPresetPhoto not supported during face detection. Falling back to AVCaptureSessionPresetHigh");
+                        preset = AVCaptureSessionPresetHigh;
+                    }
+                    if ([self.session canSetSessionPreset:preset]) {
+                        self.session.sessionPreset = preset;
+                    }
+                }
+            }
         }
-    }
-
-    [self updateSessionAudioIsMuted:[options[@"mute"] boolValue]];
+        
+        
+        BOOL isMuted = [options[@"mute"] boolValue];
+        
+        for (AVCaptureDeviceInput* input in [self.session inputs]) {
+            if ([input.device hasMediaType:AVMediaTypeAudio]) {
+                if (isMuted) {
+                    [self.session removeInput:input];
+                }
+                [self.session commitConfiguration];
+                return;
+            }
+        }
+        
+        if (!isMuted) {
+            NSError *error = nil;
+            
+            AVCaptureDevice *audioCaptureDevice = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeAudio];
+            AVCaptureDeviceInput *audioDeviceInput = [AVCaptureDeviceInput deviceInputWithDevice:audioCaptureDevice error:&error];
+            
+            if (error || audioDeviceInput == nil) {
+                RCTLogWarn(@"%s: %@", __func__, error);
+                return;
+            }
+            
+            if ([self.session canAddInput:audioDeviceInput]) {
+                [self.session addInput:audioDeviceInput];
+            }
+        }
+        [self.session commitConfiguration];
+    });
+    
+    
 
     AVCaptureConnection *connection = [self.movieFileOutput connectionWithMediaType:AVMediaTypeVideo];
     if (self.videoStabilizationMode != 0) {
@@ -745,6 +800,7 @@ static NSDictionary *defaultFaceDetectorOptions = nil;
     }
 #endif
 }
+
 
 - (void)updateSessionAudioIsMuted:(BOOL)isMuted
 {
@@ -1156,6 +1212,10 @@ static NSDictionary *defaultFaceDetectorOptions = nil;
     [self.session removeOutput:self.videoDataOutput];
     }
     self.videoDataOutput = nil;
+}
+
+- (bool)isRecording {
+    return self.movieFileOutput.isRecording;
 }
 
 @end

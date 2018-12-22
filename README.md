@@ -68,7 +68,7 @@ Supports:
 
 - photographs.
 - videos
-- face detection
+- face detection (Android & iOS only)
 - barcode scanning
 - text recognition (optional installation for iOS using CocoaPods)
 
@@ -86,7 +86,7 @@ instead of `"react-native-camera": "^1.0.0"`.
 
 ### Contributing
 - Pull Requests are welcome, if you open a pull request we will do our best to get to it in a timely manner
-- Pull Request Reviews and even more welcome! we need help testing, reviewing, and updating open PRs
+- Pull Request Reviews are even more welcome! we need help testing, reviewing, and updating open PRs
 - If you are interested in contributing more actively, please contact me (same username on Twitter, Facebook, etc.) Thanks!
 - We are now on [Open Collective](https://opencollective.com/react-native-camera#sponsor)! Contributions are appreciated and will be used to fund core contributors. [more details](#open-collective)
 - If you want to help us coding, join Expo slack https://slack.expo.io/, so we can chat over there. (#react-native-camera)
@@ -143,7 +143,8 @@ See this [doc](./docs/migration.md)
 
 ### Mostly automatic install with react-native
 1. `npm install react-native-camera --save`
-3. `react-native link react-native-camera`
+2. `react-native link react-native-camera`
+*To install it with Windows, see manual install below*
 
 ### Mostly automatic install with CocoaPods
 1. `npm install react-native-camera --save`
@@ -390,6 +391,15 @@ dependencies {
   compile 'com.github.react-native-community:cameraview:cc47bb28ed2fc54a8c56a4ce9ce53edd1f0af3a5'
 }
 ```
+
+#### Windows
+1. `npm install react-native-camera --save`
+2. Link the library as described here: [react-native-windows / LinkingLibrariesWindows.md](https://github.com/Microsoft/react-native-windows/blob/master/docs/LinkingLibrariesWindows.md)
+For the last step of this guide, you have to add the following things to your `MainReactNativeHost.cs`:
+- in the import section at the very top: `using RNCamera;`
+- in `protected override List<IReactPackage> Packages => new List<IReactPackage>` add a new line with `new RNCameraPackage()`
+3. Add the capabilities (permissions) for the webcam and microphone as described here: [docs.microsoft / audio-video-camera](https://docs.microsoft.com/en-us/windows/uwp/audio-video-camera/simple-camera-preview-access#add-capability-declarations-to-the-app-manifest)
+4. Use `RCTCamera` (RNCamera is not supported yet) like described above
 
 Follow the [Q & A](./docs/QA.md) section if you are having compilation issues.
 

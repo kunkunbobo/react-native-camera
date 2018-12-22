@@ -10,7 +10,6 @@ All you need is to `import` `{ RNCamera }` from the `react-native-camera` module
 import React, { Component } from 'react';
 import {
   AppRegistry,
-  Dimensions,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -191,12 +190,6 @@ Setting this property causes the auto focus feature of the camera to attempt to 
 
 Coordinates values are measured as floats from `0` to `1.0`.  `{ x: 0, y: 0 }` will focus on the top left of the image, `{ x: 1, y: 1 }` will be the bottom right. Values are based on landscape mode with the home button on the right—this applies even if the device is in portrait mode.
 
-#### `captureAudio`
-
-Values: `true` (Boolean), `false` (default)
-
-Specifies whether or not audio should be captured with the video. If `true`, app will request for microphone permission along with video permission.
-
 #### `flashMode`
 
 Values: `RNCamera.Constants.FlashMode.off` (default), `RNCamera.Constants.FlashMode.on`, `RNCamera.Constants.FlashMode.auto` or `RNCamera.Constants.FlashMode.torch`.
@@ -323,6 +316,31 @@ Event contains the following fields
 - `data` - a textual representation of the barcode, if available
 - `rawData` - The raw data encoded in the barcode, if available
 - `type` - the type of the barcode detected
+- `bounds` -
+  - on iOS:
+
+        bounds:{
+          size:{
+            width:string,
+            height:string
+          }
+          origin:{
+            x:string,
+            y:string
+          }
+        }
+  - onAndroid:
+
+        bounds:[{x:string,y:string}]
+  	- on Android it just returns resultPoints:
+        - for barcodes:
+
+              bounds[0].x : left side of barcode.
+              bounds[1].x : right side of barcode
+        - counting for QRcodes:
+
+              1 2
+              0
 
 The following barcode types can be recognised:
 
@@ -426,16 +444,19 @@ Supported options:
 
 - `doNotSave` (boolean true or false). Use this with `true` if you do not want the picture to be saved as a file to cache. If no value is specified `doNotSave:false` is used. If you only need the base64 for the image, you can use this with `base64:true` and avoid having to save the file.
 
-
  - `pauseAfterCapture` (boolean true or false).  If true, pause the preview layer immediately after capturing the image.  You will need to call `cameraRef.resumePreview()` before using the camera again. If no value is specified `pauseAfterCapture:false` is used.
+
+ - `orientation` (string or number). Specifies the orientation that us used for taking the picture. Possible values: `"portrait"`, `"portraitUpsideDown"`, `"landscapeLeft"` or `"landscapeRight"`.
 
 The promise will be fulfilled with an object with some of the following properties:
 
  - `width`: returns the image's width (taking image orientation into account)
  - `height`: returns the image's height (taking image orientation into account)
- - `uri`: returns the path to the image saved on your app's cache directory.
- - `base64`: returns the base64 representation of the image if required.
+ - `uri`: (string) the path to the image saved on your app's cache directory.
+ - `base64`: (string?) the base64 representation of the image if required.
  - `exif`: returns an exif map of the image if required.
+ - `pictureOrientation`: (number) the orientation of the picture
+ - `deviceOrientation`: (number) the orientation of the device
 
  #### `recordAsync([options]): Promise`
 
@@ -463,6 +484,8 @@ The promise will be fulfilled with an object with some of the following properti
      - `ios` Specifies capture settings suitable for CIF quality (352x288 pixel) video output.
      - `android` Not supported.
 
+ - `orientation` (string or number). Specifies the orientation that us used for recording the video. Possible values: `"portrait"`, `"portraitUpsideDown"`, `"landscapeLeft"` or `"landscapeRight"`.
+
     If nothing is passed the device's highest camera quality will be used as default.
  - `iOS` `codec`. This option specifies the codec of the output video. Setting the codec is only supported on `iOS >= 10`. The possible values are:
    - `RNCamera.Constants.VideoCodec['H264']`
@@ -482,7 +505,11 @@ The promise will be fulfilled with an object with some of the following properti
 
  The promise will be fulfilled with an object with some of the following properties:
 
- - `uri`: returns the path to the video saved on your app's cache directory.
+ - `uri`: (string) the path to the video saved on your app's cache directory.
+
+- `videoOrientation`: (number) orientation of the video
+
+ - `deviceOrientation`: (number) orientation of the device
 
  - `iOS` `codec`: the codec of the recorded video. One of `RNCamera.Constants.VideoCodec`
 
@@ -501,6 +528,10 @@ The promise will be fulfilled with an object with some of the following properti
  #### `Android` `getSupportedRatiosAsync(): Promise`
 
  Android only. Returns a promise. The promise will be fulfilled with an object with an array containing strings with all camera aspect ratios supported by the device.
+
+ #### `iOS` `isRecording(): Promise<boolean>`
+
+ iOS only. Returns a promise. The promise will be fulfilled with a boolean indicating if currently recording is started or stopped.
 
 ## Subviews
 This component supports subviews, so if you wish to use the camera view as a background or if you want to layout buttons/images/etc. inside the camera then you can do that.
